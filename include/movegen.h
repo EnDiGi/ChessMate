@@ -16,4 +16,6 @@ std::vector<int> getKnightMoves(Piece board[120], int knightSquare);
 
 std::vector<int> getMoves(Piece board[120], int pieceSquare);
 
-bool isSafe(Piece board[120], int square);
+bool isSafe(Piece board[120], int square, Color pieceColor);
+
+std::vector<int> filterLegal(Piece board[120], std::vector<int> moves, int pieceSquare);

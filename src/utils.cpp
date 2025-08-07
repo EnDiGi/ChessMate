@@ -5,12 +5,13 @@
 
 bool isWhite(Piece piece)
 {
-    return piece <= Piece::bKing && piece > Piece::NO_PIECE;
+    return piece < Piece::bKing && piece > Piece::NO_PIECE;
 }
 
 bool isSameColor(Piece a, Piece b)
 {
-    if(a == Piece::OFFBOARD || b == Piece::OFFBOARD || a == Piece::NO_PIECE || b == Piece::NO_PIECE) return false;
+    if (a == Piece::OFFBOARD || b == Piece::OFFBOARD || a == Piece::NO_PIECE || b == Piece::NO_PIECE)
+        return false;
     return isWhite(a) == isWhite(b);
 }
 
@@ -22,7 +23,8 @@ Color getColor(Piece p)
 int algebraicNotationToPosition(std::string notation)
 {
 
-    if (notation.length() < 2) return 0;
+    if (notation.length() < 2)
+        return 0;
 
     char colLetter = notation[0];
     char rowNumber = notation[1];
@@ -41,4 +43,49 @@ std::string positionToAlgebraic(int pos)
     colLetter = pos % 10 - 1 + 'a';
 
     return std::string{colLetter, rowNumber};
+}
+
+char pieceToSymbol(Piece piece)
+{
+    switch (piece)
+    {
+    case Piece::bRook:
+        return 'r';
+        break;
+    case Piece::bKnight:
+        return 'n';
+        break;
+    case Piece::bBishop:
+        return 'b';
+        break;
+    case Piece::bQueen:
+        return 'q';
+        break;
+    case Piece::bKing:
+        return 'k';
+        break;
+    case Piece::bPawn:
+        return 'p';
+        break;
+    case Piece::wRook:
+        return 'R';
+        break;
+    case Piece::wKnight:
+        return 'N';
+        break;
+    case Piece::wBishop:
+        return 'B';
+        break;
+    case Piece::wQueen:
+        return 'Q';
+        break;
+    case Piece::wKing:
+        return 'K';
+        break;
+    case Piece::wPawn:
+        return 'P';
+        break;
+    default:
+        return ' ';
+    }
 }

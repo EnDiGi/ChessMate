@@ -19,3 +19,5 @@ template <typename T>
 bool contains(const std::vector<T>& vec, const T& value) {
     return std::find(vec.begin(), vec.end(), value) != vec.end();
 }
+
+char pieceToSymbol(Piece piece);

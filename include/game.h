@@ -2,12 +2,16 @@
 #include <string>
 #include <vector>
 #include "definitions.h"
+#include <cstdint>
 
-class Board
+class Game
 {
 
 public:
     std::string startposfen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+
+    Color turn = Color::WHITE;
+    uint8_t castleRights = WHITE_KINGSIDE | WHITE_QUEENSIDE | BLACK_KINGSIDE | BLACK_QUEENSIDE;
 
     Piece board[120] = {
         Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, 
@@ -24,7 +28,11 @@ public:
         Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, 
     };
 
-    void print(std::vector<int> legalMoves = {});
+    void loadFromFen(std::string fen);
+
+    void getFen(Piece board[120]);
+
+    void printBoard(std::vector<int> legalMoves = {}, int pieceSquare = -1);
 
     void move(int from, int to);
 
