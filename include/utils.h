@@ -21,3 +21,5 @@ bool contains(const std::vector<T>& vec, const T& value) {
 }
 
 char pieceToSymbol(Piece piece);
+
+int randInt(int start, int end);

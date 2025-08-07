@@ -30,14 +30,16 @@ public:
 
     void loadFromFen(std::string fen);
 
-    void getFen(Piece board[120]);
+    std::string getFen(Piece board[120]);
 
-    void printBoard(std::vector<int> legalMoves = {}, int pieceSquare = -1);
+    void printBoard(std::vector<Move> legalMoves = {}, int pieceSquare = -1);
 
-    void move(int from, int to);
+    void move(Move move);
 
     Piece pieceAt(int pos);
 
     Piece pieceAt(std::string algebraic);
+
+    bool isCheckmate();
 
 };

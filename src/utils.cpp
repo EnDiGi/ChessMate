@@ -2,6 +2,7 @@
 #include "../include/utils.h"
 #include "../include/definitions.h"
 #include <string>
+#include <random>
 
 bool isWhite(Piece piece)
 {
@@ -87,5 +88,15 @@ char pieceToSymbol(Piece piece)
         break;
     default:
         return ' ';
+        break;
     }
+}
+
+int randInt(int start, int end)
+{
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> distr(start, end);
+
+    return distr(gen);
 }

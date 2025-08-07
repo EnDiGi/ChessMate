@@ -40,10 +40,10 @@ void Game::loadFromFen(std::string fen)
             {
             case ' ':
                 i++;
-                // Cycles through castling rights 
-                for(int j = i; j < fen.length(); j++)
+                // Cycles through castling rights
+                for (int j = i; j < fen.length(); j++)
                 {
-                    if(fen[j] == ' ' || fen[j] == '-')
+                    if (fen[j] == ' ' || fen[j] == '-')
                     {
                         // Advances to the next char, the turn character
                         j++;
@@ -51,7 +51,7 @@ void Game::loadFromFen(std::string fen)
                         turn = fen[j] == 'w' ? Color::WHITE : Color::BLACK;
                         return;
                     }
-                    
+
                     switch (fen[j])
                     {
                     case 'K':
@@ -114,10 +114,56 @@ void Game::loadFromFen(std::string fen)
     }
 }
 
-std::string getFen(Piece board[120])
-{}
+std::string Game::getFen(Piece board[120])
+{
 
-void Game::printBoard(std::vector<int> legalMoves, int pieceSquare)
+    std::string fen = "";
+
+    int currentSpaces = 0;
+    for (int i = 21; i < 99; i++)
+    {
+        Piece piece = board[i];
+        if (piece == Piece::OFFBOARD)
+        {
+            if (board[i + 1] == Piece::OFFBOARD)
+            {
+                if (currentSpaces != 0)
+                {
+                    fen += (char)currentSpaces + '0';
+                    currentSpaces = 0;
+                }
+                fen += "/";
+            }
+            continue;
+        }
+
+        if (piece == Piece::NO_PIECE)
+        {
+            currentSpaces += 1;
+        }
+        else
+        {
+            if (currentSpaces != 0)
+            {
+                fen += (char)currentSpaces + '0';
+                currentSpaces = 0;
+            }
+            fen += pieceToSymbol(piece);
+        }
+    }
+
+    if (currentSpaces != 0)
+    {
+        fen += (char)currentSpaces + '0';
+        currentSpaces = 0;
+    }
+
+    fen += std::string(" ") + (turn == Color::WHITE ? "w" : "b");
+
+    return fen;
+}
+
+void Game::printBoard(std::vector<Move> legalMoves, int pieceSquare)
 {
     for (int i = 0; i < 120; i++)
     {
@@ -128,19 +174,25 @@ void Game::printBoard(std::vector<int> legalMoves, int pieceSquare)
         }
 
         Piece piece = board[i];
-        
+
+        bool canBeCaptured = std::any_of(legalMoves.begin(), legalMoves.end(), [i](const Move &m)
+                                         { return m.to == i; });
+
         bool isSelected = i == pieceSquare;
-        bool isLegalMove = !legalMoves.empty() && contains(legalMoves, i) && piece == Piece::NO_PIECE;
-        bool isCapture = !legalMoves.empty() && contains(legalMoves, i) && piece != Piece::NO_PIECE;
+        bool isMove = !legalMoves.empty() && canBeCaptured && piece == Piece::NO_PIECE;
+        bool isCapture = !legalMoves.empty() && canBeCaptured && piece != Piece::NO_PIECE;
 
         if (piece != Piece::OFFBOARD)
         {
             std::cout << " ";
         }
 
-        if(isSelected) std::cout << "\033[93m";
-        if(isLegalMove) std::cout << "\033[92m";
-        if(isCapture) std::cout << "\033[91m";
+        if (isSelected)
+            std::cout << "\033[93m";
+        if (isMove)
+            std::cout << "\033[92m";
+        if (isCapture)
+            std::cout << "\033[91m";
 
         switch (piece)
         {
@@ -189,7 +241,7 @@ void Game::printBoard(std::vector<int> legalMoves, int pieceSquare)
             std::cout << "p";
             break;
         default:
-            if (!legalMoves.empty() && contains(legalMoves, i))
+            if (isMove)
             {
                 std::cout << "*";
             }
@@ -200,19 +252,19 @@ void Game::printBoard(std::vector<int> legalMoves, int pieceSquare)
             break;
         }
 
-        
-        if(isSelected || isLegalMove || isCapture) std::cout << "\033[0m";
+        if (isSelected || isMove || isCapture)
+            std::cout << "\033[0m";
     }
 
     std::cout << "\n   a b c d e f g h\n\n";
 }
 
-void Game::move(int from, int to)
+void Game::move(Move move)
 {
-    Piece piece = board[from];
+    Piece piece = board[move.from];
 
-    board[to] = piece;
-    board[from] = Piece::NO_PIECE;
+    board[move.to] = piece;
+    board[move.from] = Piece::NO_PIECE;
 }
 
 Piece Game::pieceAt(int pos)
@@ -223,4 +275,10 @@ Piece Game::pieceAt(int pos)
 Piece Game::pieceAt(std::string algebraic)
 {
     return board[algebraicNotationToPosition(algebraic)];
+}
+
+bool Game::isCheckmate()
+{
+    if(getAllMoves(board, turn).size() == 0) return true;
+    return false;
 }

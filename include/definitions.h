@@ -34,3 +34,14 @@ enum castleRights
     BLACK_KINGSIDE = 1 << 2,
     BLACK_QUEENSIDE = 1 << 3
 };
+
+struct Move
+{
+    int from;
+    int to;
+
+    bool operator==(const Move &other)
+    {
+        return from == other.from && to == other.to;
+    }
+};

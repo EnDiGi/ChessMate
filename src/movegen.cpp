@@ -4,10 +4,10 @@
 #include <iostream>
 #include <algorithm>
 
-std::vector<int> getBishopMoves(Piece board[120], int bishopSquare)
+std::vector<Move> getBishopMoves(Piece board[120], int bishopSquare)
 {
 
-    std::vector<int> moves = {};
+    std::vector<Move> moves = {};
 
     std::vector<int> offsets = {-11, 11, -9, 9};
 
@@ -23,7 +23,7 @@ std::vector<int> getBishopMoves(Piece board[120], int bishopSquare)
                 break;
             }
 
-            moves.push_back(posToCheck);
+            moves.push_back({bishopSquare, posToCheck});
 
             // There's an enemy piece
             if (cellToCheck != Piece::NO_PIECE)
@@ -36,12 +36,12 @@ std::vector<int> getBishopMoves(Piece board[120], int bishopSquare)
     return moves;
 }
 
-std::vector<int> getPawnMoves(Piece board[120], int pawnSquare)
+std::vector<Move> getPawnMoves(Piece board[120], int pawnSquare)
 {
 
     int direction = isWhite(board[pawnSquare]) ? 1 : -1;
 
-    std::vector<int> moves;
+    std::vector<Move> moves;
 
     int forwardMoveOffset = -10 * direction;
 
@@ -50,7 +50,7 @@ std::vector<int> getPawnMoves(Piece board[120], int pawnSquare)
 
     if (cellToCheck == Piece::NO_PIECE)
     {
-        moves.push_back(posToCheck);
+        moves.push_back({pawnSquare, posToCheck});
 
         int doubleForwardMoveOffset = -20 * direction;
 
@@ -59,16 +59,16 @@ std::vector<int> getPawnMoves(Piece board[120], int pawnSquare)
 
         if (cellToCheck == Piece::NO_PIECE)
         {
-            moves.push_back(posToCheck);
+            moves.push_back({pawnSquare, posToCheck});
         }
     }
 
     return moves;
 }
 
-std::vector<int> getRookMoves(Piece board[120], int rookSquare)
+std::vector<Move> getRookMoves(Piece board[120], int rookSquare)
 {
-    std::vector<int> moves = {};
+    std::vector<Move> moves = {};
 
     std::vector<int> offsets = {-10, 10, 1, -1};
 
@@ -84,7 +84,7 @@ std::vector<int> getRookMoves(Piece board[120], int rookSquare)
                 break;
             }
 
-            moves.push_back(posToCheck);
+            moves.push_back({rookSquare, posToCheck});
 
             // There's an enemy piece
             if (cellToCheck != Piece::NO_PIECE)
@@ -97,20 +97,20 @@ std::vector<int> getRookMoves(Piece board[120], int rookSquare)
     return moves;
 }
 
-std::vector<int> getQueenMoves(Piece board[120], int queenSquare)
+std::vector<Move> getQueenMoves(Piece board[120], int queenSquare)
 {
-    std::vector<int> rookMoves = getRookMoves(board, queenSquare);
-    std::vector<int> bishopMoves = getBishopMoves(board, queenSquare);
+    std::vector<Move> rookMoves = getRookMoves(board, queenSquare);
+    std::vector<Move> bishopMoves = getBishopMoves(board, queenSquare);
 
-    std::vector<int> queenMoves = rookMoves;
+    std::vector<Move> queenMoves = rookMoves;
     queenMoves.insert(queenMoves.end(), bishopMoves.begin(), bishopMoves.end());
 
     return queenMoves;
 }
 
-std::vector<int> getKingMoves(Piece board[120], int kingSquare)
+std::vector<Move> getKingMoves(Piece board[120], int kingSquare)
 {
-    std::vector<int> moves = {};
+    std::vector<Move> moves = {};
 
     std::vector<int> directions = {-10, 10, 11, -11, 9, -9, 1, -1};
 
@@ -127,16 +127,16 @@ std::vector<int> getKingMoves(Piece board[120], int kingSquare)
 
         // TODO: Implement check check
 
-        moves.push_back(posToCheck);
+        moves.push_back({kingSquare, posToCheck});
     }
 
     return moves;
 }
 
-std::vector<int> getKnightMoves(Piece board[120], int knightSquare)
+std::vector<Move> getKnightMoves(Piece board[120], int knightSquare)
 {
 
-    std::vector<int> moves = {};
+    std::vector<Move> moves = {};
 
     std::vector<int> directions = {+21, +19, +12, +8, -21, -19, -12, -8};
 
@@ -151,19 +151,13 @@ std::vector<int> getKnightMoves(Piece board[120], int knightSquare)
             continue;
         }
 
-        moves.push_back(posToCheck);
-
-        // There's an enemy piece
-        if (cellToCheck != Piece::NO_PIECE)
-        {
-            break;
-        }
+        moves.push_back({knightSquare, posToCheck});
     }
 
     return moves;
 }
 
-std::vector<int> getMoves(Piece board[120], int pieceSquare)
+std::vector<Move> getMoves(Piece board[120], int pieceSquare)
 {
     switch (board[pieceSquare])
     {
@@ -195,20 +189,21 @@ bool isSafe(Piece board[120], int square, Color pieceColor)
     for (int i = 0; i < 120; i++)
     {
         Piece piece = board[i];
-        if(getColor(piece) == pieceColor) continue; // Skips pieces of the same color
-        std::vector<int> pieceMoves = getMoves(board, i);
+        if (getColor(piece) == pieceColor)
+            continue; // Skips pieces of the same color
+        std::vector<Move> pieceMoves = getMoves(board, i);
         // Only considers pawn diagonal moves
         if (piece == Piece::bPawn || piece == Piece::wPawn)
         {
             // Erases pawn forward move and double forward move from the vector for white and black pawns
-            pieceMoves.erase(std::remove(pieceMoves.begin(), pieceMoves.end(), i - 10), pieceMoves.end());
-            pieceMoves.erase(std::remove(pieceMoves.begin(), pieceMoves.end(), i - 20), pieceMoves.end());
-            pieceMoves.erase(std::remove(pieceMoves.begin(), pieceMoves.end(), i + 10), pieceMoves.end());
-            pieceMoves.erase(std::remove(pieceMoves.begin(), pieceMoves.end(), i + 20), pieceMoves.end());
+            pieceMoves.erase(std::remove(pieceMoves.begin(), pieceMoves.end(), Move{i, i - 10}), pieceMoves.end());
+            pieceMoves.erase(std::remove(pieceMoves.begin(), pieceMoves.end(), Move{i, i - 20}), pieceMoves.end());
+            pieceMoves.erase(std::remove(pieceMoves.begin(), pieceMoves.end(), Move{i, i + 10}), pieceMoves.end());
+            pieceMoves.erase(std::remove(pieceMoves.begin(), pieceMoves.end(), Move{i, i + 20}), pieceMoves.end());
         }
-        if (contains(pieceMoves, square))
+        if (std::any_of(pieceMoves.begin(), pieceMoves.end(), [square](const Move &m)
+                        { return m.to == square; }))
         {
-            std::cout << positionToAlgebraic(square) << " isn't safe but attacked by the piece on " << positionToAlgebraic(i) << std::endl;
             return false;
         }
     }
@@ -216,31 +211,50 @@ bool isSafe(Piece board[120], int square, Color pieceColor)
     return true;
 }
 
-std::vector<int> filterLegal(Piece board[120], std::vector<int> moves, int pieceSquare)
+std::vector<Move> filterLegal(Piece board[120], std::vector<Move> moves, int pieceSquare)
 {
-    std::vector<int> legalMoves;
+    std::vector<Move> legalMoves;
 
-    for(int move: getMoves(board, pieceSquare))
+    for (Move move : getMoves(board, pieceSquare))
     {
-        Piece pieceCaptured = board[move];
+        Piece pieceCaptured = board[move.to];
         Piece pieceMoving = board[pieceSquare];
 
-        board[move] = pieceMoving;
+        // Makes the move
+        board[move.to] = pieceMoving;
         board[pieceSquare] = Piece::NO_PIECE;
 
         int kingSquare = std::find(board, board + 120, isWhite(pieceMoving) ? Piece::wKing : Piece::bKing) - board;
 
         bool kingSafe = isSafe(board, kingSquare, getColor(pieceMoving));
 
-        if(kingSafe)
+        if (kingSafe)
         {
             legalMoves.push_back(move);
         }
 
         board[pieceSquare] = pieceMoving;
-        board[move] = pieceCaptured;
-
+        board[move.to] = pieceCaptured;
     }
 
     return legalMoves;
+}
+
+std::vector<Move> getAllMoves(Piece board[120], Color color)
+{
+
+    std::vector<Move> moves;
+
+    for (int i = 0; i < 120; i++)
+    {
+        Piece piece = board[i];
+        if (piece == Piece::NO_PIECE || piece == Piece::OFFBOARD || (getColor(piece) != color))
+            continue;
+
+        std::vector<Move> pieceMoves = filterLegal(board, getMoves(board, i), i);
+
+        moves.insert(moves.end(), pieceMoves.begin(), pieceMoves.end());
+    }
+
+    return moves;
 }
