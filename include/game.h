@@ -1,4 +1,6 @@
 
+#pragma once
+
 #include <string>
 #include <vector>
 #include "definitions.h"
@@ -12,6 +14,8 @@ public:
 
     Color turn = Color::WHITE;
     uint8_t castleRights = WHITE_KINGSIDE | WHITE_QUEENSIDE | BLACK_KINGSIDE | BLACK_QUEENSIDE;
+    int halfMoves = 0;
+    int moves = 0;
 
     Piece board[120] = {
         Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, 
@@ -28,18 +32,26 @@ public:
         Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, 
     };
 
+    int getEnPassantSquare();
+
+    void switchTurn();
+
     void loadFromFen(std::string fen);
 
     std::string getFen(Piece board[120]);
 
     void printBoard(std::vector<Move> legalMoves = {}, int pieceSquare = -1);
 
-    void move(Move move);
+    void move(Move& move);
+
+    void undoMove(Move& move);
 
     Piece pieceAt(int pos);
 
     Piece pieceAt(std::string algebraic);
 
     bool isCheckmate();
+
+    bool inCheck(Color color);
 
 };

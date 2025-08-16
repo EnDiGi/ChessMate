@@ -1,8 +1,10 @@
 
 #include "../include/movegen.h"
 #include "../include/utils.h"
+#include "../include/definitions.h"
 #include <iostream>
 #include <algorithm>
+#include <cstdint>
 
 std::vector<Move> getBishopMoves(Piece board[120], int bishopSquare)
 {
@@ -23,10 +25,10 @@ std::vector<Move> getBishopMoves(Piece board[120], int bishopSquare)
                 break;
             }
 
-            moves.push_back({bishopSquare, posToCheck});
+            moves.push_back({bishopSquare, posToCheck, board[posToCheck]});
 
-            // There's an enemy piece
-            if (cellToCheck != Piece::NO_PIECE)
+            // There's an enemy piece and NOT an en passant square
+            if (cellToCheck != Piece::NO_PIECE && (cellToCheck != Piece::bEnPassant || cellToCheck == Piece::wEnPassant))
             {
                 break;
             }
@@ -39,7 +41,8 @@ std::vector<Move> getBishopMoves(Piece board[120], int bishopSquare)
 std::vector<Move> getPawnMoves(Piece board[120], int pawnSquare)
 {
 
-    int direction = isWhite(board[pawnSquare]) ? 1 : -1;
+    bool isWhitePawn = isWhite(board[pawnSquare]);
+    int direction = isWhitePawn ? 1 : -1;
 
     std::vector<Move> moves;
 
@@ -50,16 +53,44 @@ std::vector<Move> getPawnMoves(Piece board[120], int pawnSquare)
 
     if (cellToCheck == Piece::NO_PIECE)
     {
-        moves.push_back({pawnSquare, posToCheck});
+        Move pushMove = Move{pawnSquare, posToCheck, board[posToCheck]};
+        if ((pushMove.to / 10 == 2 && isWhitePawn) || (pushMove.to / 10 == 9 && !isWhitePawn))
+        {
+            pushMove.promotion = true;
+        }
+        moves.push_back(pushMove);
 
         int doubleForwardMoveOffset = -20 * direction;
 
         int posToCheck = pawnSquare + doubleForwardMoveOffset;
         Piece cellToCheck = board[posToCheck];
 
-        if (cellToCheck == Piece::NO_PIECE)
+        if (cellToCheck == Piece::NO_PIECE && ((pawnSquare / 10 == 8 && isWhitePawn) || (pawnSquare / 10 == 3 && !isWhitePawn)))
         {
-            moves.push_back({pawnSquare, posToCheck});
+
+            Move doublePushMove = Move{pawnSquare, posToCheck, board[posToCheck]};
+
+            doublePushMove.isDoublePush = true;
+            doublePushMove.enPassantCaptureSquare = pawnSquare + forwardMoveOffset;
+
+            moves.push_back(doublePushMove);
+        }
+    }
+
+    int captureOffsets[2] = {-11, -9};
+    for (int offset : captureOffsets)
+    {
+        int posToCheck = pawnSquare + (offset * direction);
+        Piece cellToCheck = board[posToCheck];
+
+        if (!isSameColor(cellToCheck, board[pawnSquare]) && cellToCheck != Piece::NO_PIECE && cellToCheck != Piece::OFFBOARD)
+        {
+            Move capture = Move{pawnSquare, posToCheck, board[posToCheck]};
+            if ((capture.to / 10 == 2 && isWhitePawn) || (capture.to / 10 == 9 && !isWhitePawn))
+            {
+                capture.promotion = true;
+            }
+            moves.push_back(capture);
         }
     }
 
@@ -84,10 +115,10 @@ std::vector<Move> getRookMoves(Piece board[120], int rookSquare)
                 break;
             }
 
-            moves.push_back({rookSquare, posToCheck});
+            moves.push_back({rookSquare, posToCheck, board[posToCheck]});
 
-            // There's an enemy piece
-            if (cellToCheck != Piece::NO_PIECE)
+            // There's an enemy piece and NOT an en passant square
+            if (cellToCheck != Piece::NO_PIECE && (cellToCheck != Piece::bEnPassant || cellToCheck == Piece::wEnPassant))
             {
                 break;
             }
@@ -125,9 +156,38 @@ std::vector<Move> getKingMoves(Piece board[120], int kingSquare)
             continue;
         }
 
-        // TODO: Implement check check
+        moves.push_back({kingSquare, posToCheck, board[posToCheck]});
+    }
 
-        moves.push_back({kingSquare, posToCheck});
+    // * Check castling
+    std::vector<int> rooksPositions = findPieces(board, (isWhite(board[kingSquare]) ? Piece::wRook : Piece::bRook));
+    if (rooksPositions.empty())
+        return moves;
+    for (int rookPos : rooksPositions)
+    {
+        bool kingSide = rookPos - kingSquare > 0;
+        bool queenSide = !kingSide;
+
+        bool canCastleOnThisSide = true;
+
+        // Cycles trough the pieces in between the king and the rook
+        for (int i = kingSquare + (kingSide ? 1 : -1); (kingSide ? i < rookPos : i > rookPos); (kingSide ? i++ : i--))
+        {
+            // Castling is not possible because there are pieces in the way
+            if (board[i] != Piece::NO_PIECE)
+            {
+                canCastleOnThisSide = false;
+            }
+        }
+
+        int kingNewSquare = kingSquare + (kingSide ? 2 : -2);
+        int rookNewSquare = kingNewSquare + (kingSide ? -1 : 1);
+
+        if (canCastleOnThisSide && board[kingNewSquare] == Piece::NO_PIECE)
+        {
+            Move castleMove = Move{kingSquare, kingNewSquare, board[kingNewSquare], true, kingSide, rookPos, rookNewSquare, board[rookNewSquare]};
+            moves.push_back(castleMove);
+        }
     }
 
     return moves;
@@ -151,7 +211,7 @@ std::vector<Move> getKnightMoves(Piece board[120], int knightSquare)
             continue;
         }
 
-        moves.push_back({knightSquare, posToCheck});
+        moves.push_back({knightSquare, posToCheck, board[posToCheck]});
     }
 
     return moves;
@@ -211,36 +271,81 @@ bool isSafe(Piece board[120], int square, Color pieceColor)
     return true;
 }
 
-std::vector<Move> filterLegal(Piece board[120], std::vector<Move> moves, int pieceSquare)
+bool hasCastleRight(uint8_t castleRights, Color color, bool kingside)
+{
+    if (color == Color::WHITE)
+    {
+        if (kingside && !(castleRights & WHITE_KINGSIDE))
+            return false;
+        if (!kingside && !(castleRights & WHITE_QUEENSIDE))
+            return false;
+    }
+    else if (color == Color::BLACK)
+    {
+        if (kingside && !(castleRights & BLACK_KINGSIDE))
+            return false;
+        if (!kingside && !(castleRights & BLACK_QUEENSIDE))
+            return false;
+    }
+    return true;
+}
+
+std::vector<Move> filterLegal(Piece board[120], std::vector<Move> moves, int pieceSquare, uint8_t &castleRights)
 {
     std::vector<Move> legalMoves;
 
-    for (Move move : getMoves(board, pieceSquare))
+    for (Move move : moves)
     {
-        Piece pieceCaptured = board[move.to];
-        Piece pieceMoving = board[pieceSquare];
-
-        // Makes the move
-        board[move.to] = pieceMoving;
-        board[pieceSquare] = Piece::NO_PIECE;
-
-        int kingSquare = std::find(board, board + 120, isWhite(pieceMoving) ? Piece::wKing : Piece::bKing) - board;
-
-        bool kingSafe = isSafe(board, kingSquare, getColor(pieceMoving));
-
-        if (kingSafe)
+        if (!move.isCastle)
         {
-            legalMoves.push_back(move);
-        }
+            Piece pieceCaptured = board[move.to];
+            Piece pieceMoving = board[pieceSquare];
 
-        board[pieceSquare] = pieceMoving;
-        board[move.to] = pieceCaptured;
+            // Makes the move
+            board[move.to] = pieceMoving;
+            board[pieceSquare] = Piece::NO_PIECE;
+
+            int kingSquare = std::find(board, board + 120, isWhite(pieceMoving) ? Piece::wKing : Piece::bKing) - board;
+
+            bool kingSafe = isSafe(board, kingSquare, getColor(pieceMoving));
+
+            if (kingSafe)
+            {
+                legalMoves.push_back(move);
+            }
+
+            // Undoes the move
+            board[pieceSquare] = pieceMoving;
+            board[move.to] = pieceCaptured;
+        }
+        else
+        {
+            bool castleLegal = true;
+            Color kingColor = getColor(board[move.from]);
+
+            if (!hasCastleRight(castleRights, kingColor, move.isKingside))
+            {
+                continue;
+            }
+
+            for (int i = move.from; (move.isKingside ? i <= move.to : i >= move.to); (move.isKingside ? i++ : i--))
+            {
+                bool squareIsSafe = isSafe(board, i, getColor(board[move.from]));
+
+                if (!squareIsSafe)
+                {
+                    castleLegal = false;
+                }
+            }
+            if (castleLegal)
+                legalMoves.push_back(move);
+        }
     }
 
     return legalMoves;
 }
 
-std::vector<Move> getAllMoves(Piece board[120], Color color)
+std::vector<Move> getAllMoves(Piece board[120], Color color, uint8_t &castleRights)
 {
 
     std::vector<Move> moves;
@@ -251,7 +356,7 @@ std::vector<Move> getAllMoves(Piece board[120], Color color)
         if (piece == Piece::NO_PIECE || piece == Piece::OFFBOARD || (getColor(piece) != color))
             continue;
 
-        std::vector<Move> pieceMoves = filterLegal(board, getMoves(board, i), i);
+        std::vector<Move> pieceMoves = filterLegal(board, getMoves(board, i), i, castleRights);
 
         moves.insert(moves.end(), pieceMoves.begin(), pieceMoves.end());
     }
