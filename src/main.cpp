@@ -28,7 +28,7 @@ int main()
     std::cout << "Fen: " << game.getFen(game.board) << std::endl;
     std::cout << "The engine is evaluating the position..." << std::endl;
 
-    Engine engine(Color::BLACK, &game, 3);
+    Engine engine(Color::BLACK, &game, 4);
     double eval = engine.chooseMove(game.castleRights).second;
 
     while (true)
