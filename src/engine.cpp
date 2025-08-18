@@ -17,8 +17,6 @@ Engine::Engine(Color color, Game *game, int depth)
 
 std::pair<Move, double> Engine::chooseMove(uint8_t &castleRights)
 {
-    std::vector<Move> allMoves = getAllMoves(game->board, this->color, castleRights);
-
     long long counter = 0;
     auto start = std::chrono::high_resolution_clock::now();
 
@@ -80,7 +78,7 @@ double Engine::search(int depth, double alpha, double beta, Color color, Move &b
     counter++;
     Move localBest;
 
-    std::vector<Move> allMoves = getAllMoves(game->board, color, castleRights);
+    std::vector<Move> allMoves = getAllMoves(game, color);
 
     sortMoves(allMoves);
 

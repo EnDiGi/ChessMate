@@ -25,20 +25,10 @@ int main()
 
     Game game;
     game.turn = Color::WHITE;
-    // checks game.loadFromFen("8/pR1n2kp/2qp1pp1/b7/6N1/1B2Q2P/P4PP1/5K2 w - - 0 1")
-    // game.loadFromFen("r1bqk1nr/ppppbppp/2n5/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 0 1");
-    // en passant game.loadFromFen("r3k2r/1p1p1p1p/8/2P1P1P1/pB1p2p1/8/2P2P2/r3K2R w - - 0 1");
-    // en passants game.loadFromFen("3k4/4p1N1/8/5P2/3p4/8/2P5/bR2K2R w K - 0 1");
-    // promotion game.loadFromFen("3k4/P6P/8/8/8/8/6p1/3K4 w - - 0 1");
-    // castling game.loadFromFen("r1bqk2r/pppp1ppp/2n2n2/4p3/1bB1P3/2N2N2/PPPP1PPP/R1BQK2R w KQkq - 0 5");
-    // Kasparov vs Topalov game.loadFromFen("r1b2rk1/1p3ppp/p1n1pn2/q1bp4/P1B5/2N2N2/1PP2PPP/R1BQR1K1 w - - 0 25");
-    // test position game.loadFromFen("r3k2r/p1p2pb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPP1BPPP/2KR3R w KQkq - 0 1");
-    // eval check game.loadFromFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/7K w KQkq - 0 1");
-    // game.loadFromFen("r3k2r/ppB2ppp/2n5/8/6b1/2PP4/P2NN1qP/R2QKR2 w Qkq - 0 3");
     std::cout << "Fen: " << game.getFen(game.board) << std::endl;
     std::cout << "The engine is evaluating the position..." << std::endl;
 
-    Engine engine(Color::BLACK, &game, 4);
+    Engine engine(Color::BLACK, &game, 3);
     double eval = engine.chooseMove(game.castleRights).second;
 
     while (true)
@@ -104,7 +94,7 @@ int main()
 
             int fromPos = algebraicNotationToPosition(from);
 
-            std::vector<Move> legalMoves = filterLegal(game.board, getMoves(game.board, fromPos), fromPos, game.castleRights);
+            std::vector<Move> legalMoves = filterLegal(&game, getMoves(game.board, fromPos), fromPos);
 
             // Prints the board and shows which legal moves are possible
             game.printBoard(legalMoves, fromPos);

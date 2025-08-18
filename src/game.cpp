@@ -4,6 +4,12 @@
 #include "../include/movegen.h"
 #include <iostream>
 #include <algorithm>
+#include <string>
+
+Game::Game()
+{
+    loadFromFen(this->startposfen);
+}
 
 void Game::switchTurn()
 {
@@ -63,6 +69,7 @@ void Game::loadFromFen(std::string fen)
                 board[boardIdx] = Piece::bQueen;
                 break;
             case 'k':
+                bKingPos = boardIdx;
                 board[boardIdx] = Piece::bKing;
                 break;
             case 'p':
@@ -81,6 +88,7 @@ void Game::loadFromFen(std::string fen)
                 board[boardIdx] = Piece::wQueen;
                 break;
             case 'K':
+                wKingPos = boardIdx;
                 board[boardIdx] = Piece::wKing;
                 break;
             case 'P':
@@ -335,7 +343,7 @@ void Game::printBoard(std::vector<Move> legalMoves, int pieceSquare)
 void Game::move(Move &move)
 {
 
-    // A move object without any falgs like castling, promotion, etc.
+    // A move object without any flags like castling, promotion, etc.
     Move rawMove = Move{move.from, move.to, move.captured};
 
     // Check if the move broke any casstle right
@@ -418,6 +426,10 @@ void Game::move(Move &move)
         Move rookMove = Move{move.rookSquareFrom, move.rookSquareTo, move.rookCaptured};
         this->move(rookMove);
     }
+
+    // Updates variables
+    if(board[move.from] == Piece::wKing) wKingPos = move.to;
+    if(board[move.from] == Piece::bKing) bKingPos = move.to;
 }
 
 void Game::undoMove(Move &move)
@@ -495,16 +507,11 @@ Piece Game::pieceAt(std::string algebraic)
 
 bool Game::isCheckmate()
 {
-    if (getAllMoves(board, turn, castleRights).size() == 0)
-        return true;
-    return false;
+    return getAllMoves(this, turn).size() == 0;
 }
 
 bool Game::inCheck(Color color)
 {
-    Piece kingPiece = color == Color::WHITE ? Piece::wKing : Piece::bKing;
-    int kingSquare = std::find(board, board + 120, kingPiece) - board;
-    if (kingSquare == 120)
-        return true;
+    int kingSquare = color == Color::WHITE ? wKingPos : bKingPos;
     return !isSafe(board, kingSquare, getColor(pieceAt(kingSquare)));
 }

@@ -2,6 +2,7 @@
 #include <vector>
 #include <cstdint>
 #include "definitions.h"
+#include "game.h"
 
 std::vector<Move> getBishopMoves(Piece board[120], int bishopSquare);
 
@@ -21,6 +22,6 @@ bool isSafe(Piece board[120], int square, Color pieceColor);
 
 bool hasCastleRight(uint8_t castleRights, Color color, bool kingside);
 
-std::vector<Move> filterLegal(Piece board[120], std::vector<Move> moves, int pieceSquare, uint8_t &castleRights);
+std::vector<Move> filterLegal(Game* game, std::vector<Move> moves, int pieceSquare);
 
-std::vector<Move> getAllMoves(Piece board[120], Color color, uint8_t &castleRights);
+std::vector<Move> getAllMoves(Game* game, Color color);

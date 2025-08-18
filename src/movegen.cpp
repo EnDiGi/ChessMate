@@ -2,6 +2,7 @@
 #include "../include/movegen.h"
 #include "../include/utils.h"
 #include "../include/definitions.h"
+#include "../include/game.h"
 #include <iostream>
 #include <algorithm>
 #include <cstdint>
@@ -290,7 +291,7 @@ bool hasCastleRight(uint8_t castleRights, Color color, bool kingside)
     return true;
 }
 
-std::vector<Move> filterLegal(Piece board[120], std::vector<Move> moves, int pieceSquare, uint8_t &castleRights)
+std::vector<Move> filterLegal(Game* game, std::vector<Move> moves, int pieceSquare)
 {
     std::vector<Move> legalMoves;
 
@@ -298,39 +299,33 @@ std::vector<Move> filterLegal(Piece board[120], std::vector<Move> moves, int pie
     {
         if (!move.isCastle)
         {
-            Piece pieceCaptured = board[move.to];
-            Piece pieceMoving = board[pieceSquare];
+            game->move(move);
 
-            // Makes the move
-            board[move.to] = pieceMoving;
-            board[pieceSquare] = Piece::NO_PIECE;
+            Color color = getColor(game->board[move.from]);
+            int kingSquare = color == Color::WHITE ? game->wKingPos : game->bKingPos;
 
-            int kingSquare = std::find(board, board + 120, isWhite(pieceMoving) ? Piece::wKing : Piece::bKing) - board;
-
-            bool kingSafe = isSafe(board, kingSquare, getColor(pieceMoving));
+            bool kingSafe = isSafe(game->board, kingSquare, color);
 
             if (kingSafe)
             {
                 legalMoves.push_back(move);
             }
 
-            // Undoes the move
-            board[pieceSquare] = pieceMoving;
-            board[move.to] = pieceCaptured;
+            game->undoMove(move);
         }
         else
         {
             bool castleLegal = true;
-            Color kingColor = getColor(board[move.from]);
+            Color kingColor = getColor(game->board[move.from]);
 
-            if (!hasCastleRight(castleRights, kingColor, move.isKingside))
+            if (!hasCastleRight(game->castleRights, kingColor, move.isKingside))
             {
                 continue;
             }
 
             for (int i = move.from; (move.isKingside ? i <= move.to : i >= move.to); (move.isKingside ? i++ : i--))
             {
-                bool squareIsSafe = isSafe(board, i, getColor(board[move.from]));
+                bool squareIsSafe = isSafe(game->board, i, kingColor);
 
                 if (!squareIsSafe)
                 {
@@ -345,18 +340,18 @@ std::vector<Move> filterLegal(Piece board[120], std::vector<Move> moves, int pie
     return legalMoves;
 }
 
-std::vector<Move> getAllMoves(Piece board[120], Color color, uint8_t &castleRights)
+std::vector<Move> getAllMoves(Game* game, Color color)
 {
 
     std::vector<Move> moves;
 
     for (int i = 0; i < 120; i++)
     {
-        Piece piece = board[i];
+        Piece piece = game->board[i];
         if (piece == Piece::NO_PIECE || piece == Piece::OFFBOARD || (getColor(piece) != color))
             continue;
 
-        std::vector<Move> pieceMoves = filterLegal(board, getMoves(board, i), i, castleRights);
+        std::vector<Move> pieceMoves = filterLegal(game, getMoves(game->board, i), i);
 
         moves.insert(moves.end(), pieceMoves.begin(), pieceMoves.end());
     }

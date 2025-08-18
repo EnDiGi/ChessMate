@@ -17,6 +17,9 @@ public:
     int halfMoves = 0;
     int moves = 0;
 
+    int wKingPos = 0;
+    int bKingPos = 0;
+
     Piece board[120] = {
         Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, 
         Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD,
@@ -31,6 +34,8 @@ public:
         Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD,
         Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, Piece::OFFBOARD, 
     };
+
+    Game();
 
     int getEnPassantSquare();
 
