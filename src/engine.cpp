@@ -6,28 +6,55 @@
 #include <iostream>
 #include <utility>
 #include <chrono>
+#include <algorithm>
 
-Engine::Engine(Color color, Game *game, int depth)
+typedef std::chrono::system_clock::time_point time_point_t;
+
+Engine::Engine(Color color, Game *game, uint minDepth, uint maxDepth, double thinkingTime)
 {
     this->color = color;
     this->game = game;
     this->evaluator = Evaluator();
-    this->depth = depth;
+    this->minDepth = minDepth;
+    this->maxDepth = maxDepth;
+    this->thinkingTime = thinkingTime;
+
 }
 
-std::pair<Move, double> Engine::chooseMove(uint8_t &castleRights)
+std::pair<Move, int> Engine::chooseMove(uint8_t &castleRights)
 {
+
     long long counter = 0;
-    auto start = std::chrono::high_resolution_clock::now();
+    time_point_t start = std::chrono::system_clock::now();
 
-    Move bestMove;
-    int eval = search(depth, -1000000, 1000000, color, bestMove, castleRights, counter);
+    Move bestMoveSoFar;
+    int eval = 0;
 
-    std::chrono::duration<double, std::milli> elapsed = (std::chrono::high_resolution_clock::now() - start);
+    int depthReached = 0;
+
+    // Implement iterative deepening
+    for(int d = 1; d <= maxDepth; d++)
+    {
+        std::cout << "searching at a depth of " << d << "..." << std::endl;
+        Move currentBest;
+        int currentEval = search(d, -1000000, 1000000, game->turn, currentBest, castleRights, counter, start);
+
+        depthReached = d;
+
+        if(timeUp(start) && d >= minDepth) break;
+
+        bestMoveSoFar = currentBest;
+        eval = currentEval;
+    }
+    
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
     auto duration = elapsed.count();
-    std::cout << "Analized " << counter << " moves in " << duration / 1000 << "s with a depth of " << this->depth << " plies" << std::endl;
 
-    return {bestMove, -eval};
+    // Display info for how many positions were evaluated in how much time
+    std::cout << "Analized " << counter << " positions in " << duration << "s reaching a depth of " << depthReached << " plies" << std::endl;
+
+    return {bestMoveSoFar, eval * (this->color == Color::BLACK ? -1 : 1)};
 }
 
 int Engine::getMoveScore(const Move move)
@@ -43,6 +70,14 @@ int Engine::getMoveScore(const Move move)
         score += getPieceValue(game->board[move.to]);
 
     return score;
+}
+
+bool Engine::timeUp(time_point_t start)
+{
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+    auto duration = elapsed.count();
+    return duration >= thinkingTime;
 }
 
 void Engine::sortMoves(std::vector<Move> &moves)
@@ -69,18 +104,30 @@ void Engine::sortMoves(std::vector<Move> &moves)
     }
 }
 
-double Engine::search(int depth, double alpha, double beta, Color color, Move &bestMove, uint8_t castleRights, long long &counter)
+int Engine::search(int depth, int alpha, int beta, Color color, Move &bestMove, uint8_t castleRights, long long &counter, time_point_t timerStart)
 {
 
     if (depth == 0)
-        return evaluator.eval(game->board) * (color == this->color ? -1 : 1);
+        return -quiescence(-1000000, 1000000, opponentColor(color), castleRights, counter, timerStart);
 
-    counter++;
-    Move localBest;
 
+    if(timeUp(timerStart) && depth >= minDepth)
+    {
+        return alpha;
+    }
+    
     std::vector<Move> allMoves = getAllMoves(game, color);
-
     sortMoves(allMoves);
+    
+    if(allMoves.empty()) {
+        // No move available: checkmate or stalemate
+        if(game->inCheck(color)) return -100000 + depth;
+        return 0;
+    }
+    
+    counter++;
+    
+    Move localBest;
 
     for (Move move : allMoves)
     {
@@ -89,10 +136,9 @@ double Engine::search(int depth, double alpha, double beta, Color color, Move &b
         uint8_t newCastleRights = castleRights;
         Move tempMove;
         int searchDepthExtension = 0;
-        if (move.promotion)
+        if (move.promotion || game->inCheck(opponentColor(color)))
             searchDepthExtension++;
-
-        int eval = -search(depth - 1 + searchDepthExtension, -beta, -alpha, opponentColor(color), tempMove, newCastleRights, counter);
+        int eval = -search(depth - 1 + searchDepthExtension, -beta, -alpha, opponentColor(color), tempMove, newCastleRights, counter, timerStart);
         game->undoMove(move);
 
         if (eval >= beta)
@@ -106,6 +152,37 @@ double Engine::search(int depth, double alpha, double beta, Color color, Move &b
     }
 
     bestMove = localBest;
+
+
+    return alpha;
+}
+
+int Engine::quiescence(int alpha, int beta, Color color, uint8_t castleRights, long long &counter, time_point_t timeStart)
+{
+
+    int eval = evaluator.eval(game->board) * (color == Color::WHITE ? 1 : -1);
+
+    if(eval >= beta) return beta;
+    alpha = std::max(alpha, eval);
+
+    if(timeUp(timeStart)) return alpha;
+
+    counter++;
+
+    std::vector<Move> allCaptures = getAllMoves(game, color, true);
+    sortMoves(allCaptures);
+
+    for (Move move : allCaptures)
+    {
+        game->move(move);
+        uint8_t newCastleRights = castleRights;
+        eval = -quiescence(-beta, -alpha, opponentColor(color), newCastleRights, counter, timeStart);
+        game->undoMove(move);
+
+        if (eval >= beta)
+            return beta;
+        alpha = std::max(alpha, eval);
+    }
 
     return alpha;
 }

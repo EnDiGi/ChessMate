@@ -237,21 +237,22 @@ void Game::printBoard(std::vector<Move> legalMoves, int pieceSquare)
 
         Piece piece = board[i];
 
-        bool canBeCaptured = std::any_of(legalMoves.begin(), legalMoves.end(), [i](const Move &m)
+        bool canMoveToThatSquare = std::any_of(legalMoves.begin(), legalMoves.end(), [i](const Move &m)
                                          { return m.to == i; });
 
         bool movingPieceIsPawn = (board[pieceSquare] == Piece::wPawn || board[pieceSquare] == Piece::bPawn);
         bool pieceIsEnPassant = piece == Piece::bEnPassant || piece == Piece::wEnPassant;
 
-        bool isCapture = !legalMoves.empty() && canBeCaptured &&
-                             (piece != Piece::NO_PIECE && !pieceIsEnPassant) ||
+        bool isCapture = !legalMoves.empty() && 
+                         canMoveToThatSquare &&
+                         (piece != Piece::NO_PIECE && !pieceIsEnPassant) ||
                          (pieceIsEnPassant && movingPieceIsPawn);
 
-        bool isEnPassant = isCapture && canBeCaptured &&
+        bool isEnPassant = isCapture && canMoveToThatSquare &&
                            pieceIsEnPassant &&
                            movingPieceIsPawn;
 
-        bool isMove = !legalMoves.empty() && canBeCaptured &&
+        bool isMove = !legalMoves.empty() && canMoveToThatSquare &&
                       (piece == Piece::NO_PIECE || pieceIsEnPassant) && !isEnPassant;
 
         std::string bgColor = isSquareBlack ? "104" : "46";
@@ -338,6 +339,14 @@ void Game::printBoard(std::vector<Move> legalMoves, int pieceSquare)
     }
 
     std::cout << "\n\n\033[90m   a b c d e f g h\033[0m\n\n";
+}
+
+void Game::officialMove(Move &move)
+{
+    this->move(move);
+    
+    // Eliminates any opponent enpassant pieces
+    replace(board, 120, isWhite(board[move.to]) ? Piece::bEnPassant : Piece::wEnPassant, Piece::NO_PIECE);
 }
 
 void Game::move(Move &move)
@@ -428,8 +437,10 @@ void Game::move(Move &move)
     }
 
     // Updates variables
-    if(board[move.from] == Piece::wKing) wKingPos = move.to;
-    if(board[move.from] == Piece::bKing) bKingPos = move.to;
+    if(board[move.to] == Piece::wKing) wKingPos = move.to;
+    if(board[move.to] == Piece::bKing) bKingPos = move.to;
+    if(move.captured == Piece::wKing) wKingPos = 0;
+    if(move.captured == Piece::bKing) bKingPos = 0;
 }
 
 void Game::undoMove(Move &move)
@@ -493,6 +504,12 @@ void Game::undoMove(Move &move)
             break;
         }
     }
+
+    // Updates variables
+    if(board[move.from] == Piece::wKing) wKingPos = move.from;
+    if(board[move.from] == Piece::bKing) bKingPos = move.from;
+    if(move.captured == Piece::wKing) wKingPos = move.to;
+    if(move.captured == Piece::bKing) bKingPos = move.to;
 }
 
 Piece Game::pieceAt(int pos)
@@ -513,5 +530,5 @@ bool Game::isCheckmate()
 bool Game::inCheck(Color color)
 {
     int kingSquare = color == Color::WHITE ? wKingPos : bKingPos;
-    return !isSafe(board, kingSquare, getColor(pieceAt(kingSquare)));
+    return !isSafe(board, kingSquare, color);
 }

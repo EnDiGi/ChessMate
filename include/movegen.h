@@ -24,4 +24,4 @@ bool hasCastleRight(uint8_t castleRights, Color color, bool kingside);
 
 std::vector<Move> filterLegal(Game* game, std::vector<Move> moves, int pieceSquare);
 
-std::vector<Move> getAllMoves(Game* game, Color color);
+std::vector<Move> getAllMoves(Game* game, Color color, bool onlyCaptures = false);

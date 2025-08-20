@@ -24,14 +24,14 @@ bool isSameColor(Piece a, Piece b)
 
 Color getColor(Piece p)
 {
-    if(p < Piece::wKing) return Color::COLOR_NB;
+    if(((int)p < (int)Piece::wKing) || (int)p > (int)Piece::bEnPassant) return Color::COLOR_NB;
     return isWhite(p) ? Color::WHITE : Color::BLACK;
 }
 
 int algebraicNotationToPosition(std::string notation)
 {
 
-    if (notation.length() < 2)
+    if (notation.length() != 2)
         return 0;
 
     char colLetter = notation[0];

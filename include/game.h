@@ -47,6 +47,8 @@ public:
 
     void printBoard(std::vector<Move> legalMoves = {}, int pieceSquare = -1);
 
+    void officialMove(Move& move);
+
     void move(Move& move);
 
     void undoMove(Move& move);

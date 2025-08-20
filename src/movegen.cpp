@@ -245,32 +245,90 @@ std::vector<Move> getMoves(Piece board[120], int pieceSquare)
     }
 }
 
+
 bool isSafe(Piece board[120], int square, Color pieceColor)
 {
+
+    if(square == 0) return false;
+
     for (int i = 0; i < 120; i++)
     {
         Piece piece = board[i];
         if (getColor(piece) == pieceColor)
             continue; // Skips pieces of the same color
-        std::vector<Move> pieceMoves = getMoves(board, i);
-        // Only considers pawn diagonal moves
-        if (piece == Piece::bPawn || piece == Piece::wPawn)
+
+        if(piece == Piece::wKnight || piece == Piece::bKnight)
         {
-            // Erases pawn forward move and double forward move from the vector for white and black pawns
-            pieceMoves.erase(std::remove(pieceMoves.begin(), pieceMoves.end(), Move{i, i - 10}), pieceMoves.end());
-            pieceMoves.erase(std::remove(pieceMoves.begin(), pieceMoves.end(), Move{i, i - 20}), pieceMoves.end());
-            pieceMoves.erase(std::remove(pieceMoves.begin(), pieceMoves.end(), Move{i, i + 10}), pieceMoves.end());
-            pieceMoves.erase(std::remove(pieceMoves.begin(), pieceMoves.end(), Move{i, i + 20}), pieceMoves.end());
+            int offsets[8] = {+21, +19, +12, +8, -21, -19, -12, -8};
+            for(int offset : offsets)
+            {
+                if(i + offset == square) return false;
+            }
         }
-        if (std::any_of(pieceMoves.begin(), pieceMoves.end(), [square](const Move &m)
-                        { return m.to == square; }))
+        else if(piece == Piece::wKing || piece == Piece::bKing)
         {
-            return false;
+            int offsets[8] = {-11, -10, -9, -1, 1, 9, 10, 11};
+            for(int offset : offsets)
+            {
+                if(i + offset == square) return false;
+            }
+        }
+        else if(piece == Piece::wPawn)
+        {
+            int offsets[2] = {-11, -9};
+            for(int offset : offsets)
+            {
+                if(i + offset == square) return false;
+            }
+        }
+        else if(piece == Piece::bPawn)
+        {
+            int offsets[2] = {9, 11};
+            for(int offset : offsets)
+            {
+                if(i + offset == square) return false;
+            }
+        }
+        else if(piece == Piece::wBishop || piece == Piece::bBishop)
+        {
+            int offsets[4] = {-11, 11, -9, 9};
+            for(int offset : offsets)
+            {
+                for(int j = 1; j < 8; j++)
+                {
+                    if(i + offset * j == square) return false;
+                    if(board[i + offset * j] != Piece::NO_PIECE) break;
+                }
+            }
+        }
+        else if(piece == Piece::wRook || piece == Piece::bRook)
+        {
+            int offsets[4] = {-10, 10, -1, 1};
+            for(int offset : offsets)
+            {
+                for(int j = 1; j < 8; j++)
+                {
+                    if(i + offset * j == square) return false;
+                    if(board[i + offset * j] != Piece::NO_PIECE) break;
+                }
+            }
+        }
+        else if(piece == Piece::wQueen || piece == Piece::bQueen)
+        {
+            int offsets[8] = {-10, -11, 11, 10, 9, -9, -1, 1};
+            for(int offset : offsets)
+            {
+                for(int j = 1; j < 8; j++)
+                {
+                    if(i + offset * j == square) return false;
+                    if(board[i + offset * j] != Piece::NO_PIECE) break;
+                }
+            }
         }
     }
-
     return true;
 }
+
 
 bool hasCastleRight(uint8_t castleRights, Color color, bool kingside)
 {
@@ -301,12 +359,7 @@ std::vector<Move> filterLegal(Game* game, std::vector<Move> moves, int pieceSqua
         {
             game->move(move);
 
-            Color color = getColor(game->board[move.from]);
-            int kingSquare = color == Color::WHITE ? game->wKingPos : game->bKingPos;
-
-            bool kingSafe = isSafe(game->board, kingSquare, color);
-
-            if (kingSafe)
+            if (!game->inCheck(getColor(game->board[move.to])))
             {
                 legalMoves.push_back(move);
             }
@@ -340,7 +393,7 @@ std::vector<Move> filterLegal(Game* game, std::vector<Move> moves, int pieceSqua
     return legalMoves;
 }
 
-std::vector<Move> getAllMoves(Game* game, Color color)
+std::vector<Move> getAllMoves(Game* game, Color color, bool onlyCaptures)
 {
 
     std::vector<Move> moves;
@@ -350,9 +403,19 @@ std::vector<Move> getAllMoves(Game* game, Color color)
         Piece piece = game->board[i];
         if (piece == Piece::NO_PIECE || piece == Piece::OFFBOARD || (getColor(piece) != color))
             continue;
+        
+        std::vector<Move> pieceMoves = getMoves(game->board, i);
+        
+        // If onlyCaptures is true only account for captures
+        if(onlyCaptures)
+        {
+            pieceMoves.erase(std::remove_if(pieceMoves.begin(), pieceMoves.end(),
+                           [](const Move& move) { return move.captured == Piece::NO_PIECE; }),
+            pieceMoves.end());
+        }
 
-        std::vector<Move> pieceMoves = filterLegal(game, getMoves(game->board, i), i);
-
+        pieceMoves = filterLegal(game, pieceMoves, i);
+        
         moves.insert(moves.end(), pieceMoves.begin(), pieceMoves.end());
     }
 

@@ -9,43 +9,100 @@
 
 std::string getEvalText(int eval)
 {
-    if(abs(eval) < 10) return "position is equal";
-    else if(abs(eval) < 100) return "position is roughly equal";
-    else if(eval < -150) return "black is better";
-    else if(eval > 150) return "white is better";
-    else if(eval > 100) return "white is slightly better";
-    else if(eval < -100) return "black is slightly better";
+    if (abs(eval) < 10)
+        return "position is equal";
+    else if (abs(eval) <= 100)
+        return "position is roughly equal";
+    else if (abs(eval) + 20 >= 100000)
+        return "MATE in " + std::to_string(abs(abs(eval) - 100000));
+    else if (eval < -150)
+        return "black is better";
+    else if (eval > 150)
+        return "white is better";
+    else if (eval >= 100)
+        return "white is slightly better";
+    else if (eval <= -100)
+        return "black is slightly better";
     return "error evaluating the position";
 }
 
-int main()
+int main(int argc, char *argv[])
 {
+
+    Color engineColor = Color::BLACK;
+    uint engineMaxDepth = 4;
+    uint engineMinDepth = 2;
+    uint engineThinkingTime = 10;
+
+    for (int i = 1; i < argc; i++)
+    {
+        std::string arg = argv[i];
+        if (arg == "--color" && i + 1 < argc)
+        {
+
+            char colorStr = *argv[i + 1];
+            if (colorStr == 'w')
+            {
+                engineColor = Color::WHITE;
+            }
+        }
+        else if (arg == "--max_depth" && i + 1 < argc)
+        {
+            uint depthInput = std::atoi(argv[++i]);
+            if (depthInput > 2)
+            {
+                engineMaxDepth = depthInput;
+            }
+        }
+        else if (arg == "--min_depth" && i + 1 < argc)
+        {
+            uint depthInput = std::atoi(argv[++i]);
+            if (depthInput > 2)
+            {
+                engineMinDepth = depthInput;
+            }
+        }
+        else if (arg == "--think_time" && i + 1 < argc)
+        {
+            uint timeInput = std::atoi(argv[++i]);
+            if (timeInput > 0)
+            {
+                engineThinkingTime = timeInput;
+            }
+        }
+    }
 
     std::cout << "\033[0m" << std::endl;
 
     Game game;
     game.turn = Color::WHITE;
-    std::cout << "Fen: " << game.getFen(game.board) << std::endl;
+
+    Engine engine(engineColor, &game, engineMinDepth, engineMaxDepth, engineThinkingTime);
+    std::cout << "Engine initialized with color: " << getColorName(engine.color) << std::endl
+              << "                maximum depth: " << engine.maxDepth << std::endl
+              << "                thinking time: " << engine.thinkingTime << "s" << std::endl;
     std::cout << "The engine is evaluating the position..." << std::endl;
 
-    Engine engine(Color::BLACK, &game, 4);
     double eval = engine.chooseMove(game.castleRights).second;
+
+    std::cout << "Fen: " << game.getFen(game.board) << std::endl;
+    game.loadFromFen("4rb1k/2pqn2p/6pn/ppp3N1/P1QP2b1/1P2p3/2B3PP/B3RRK1 w - - 0 24");
 
     while (true)
     {
 
-        // Updates the turn
+        // Updates the move count
         if (game.turn == Color::WHITE)
         {
             game.moves++;
+            std::cout << "Fen: " << game.getFen(game.board) << std::endl;
+            std::cout << "Evaluation: " << std::showpos << eval / 100 << std::noshowpos << std::endl;
         }
 
         // * Player move
         if (game.turn != engine.color)
         {
             // Displays game information
-            std::cout << "Fen: " << game.getFen(game.board) << std::endl;
-            std::cout << "Evaluation: " << std::showpos << eval / 100 << std::noshowpos << std::endl;
             std::cout << getEvalText(eval) << std::endl;
 
             game.printBoard();
@@ -56,7 +113,8 @@ int main()
                 return 0;
             }
 
-            std::cout << std::endl << getColorName(game.turn) << "'s turn" << std::endl;
+            std::cout << std::endl
+                      << getColorName(game.turn) << "'s turn" << std::endl;
             int kingSquare = std::find(game.board, game.board + 120, game.turn == Color::WHITE ? Piece::wKing : Piece::bKing) - game.board;
 
             // Displays the check message in red
@@ -72,7 +130,6 @@ int main()
             std::string from;
             std::cout << "from: ";
             std::cin >> from;
-
 
             // Checks the validity of the user input
             if (from.length() != 2)
@@ -110,14 +167,14 @@ int main()
 
             int toPos = algebraicNotationToPosition(to);
 
-            // Finds a move whose to coordinate matches the to input writeen by the user
+            // Finds a move whose to coordinate matches the to input written by the user
             auto it = std::find_if(legalMoves.begin(), legalMoves.end(), [toPos](const Move &m)
                                    { return m.to == toPos; });
 
             if (it != legalMoves.end())
             {
                 Move move = *it;
-                game.move(move);
+                game.officialMove(move);
             }
             else
             {
@@ -132,16 +189,17 @@ int main()
 
         // * Engine move
 
-        std::cout << "Fen: " << game.getFen(game.board) << std::endl;
-
         if (game.isCheckmate())
         {
-            std::cout << getColorName(game.turn) << " wins!" << std::endl;
+            std::cout << getColorName(opponentColor(game.turn)) << " wins!" << std::endl;
             return 0;
         }
 
+        std::cout << "Fen: " << game.getFen(game.board) << std::endl;
+
         std::cout << std::endl
                   << getColorName(game.turn) << "'s turn" << std::endl;
+
         int kingSquare = std::find(game.board, game.board + 120, game.turn == Color::WHITE ? Piece::wKing : Piece::bKing) - game.board;
 
         if (kingSquare != 120)
@@ -158,7 +216,7 @@ int main()
         std::pair<Move, int> engineOutput = engine.chooseMove(game.castleRights);
         Move engineMove = engineOutput.first;
         eval = engineOutput.second;
-        game.move(engineMove);
+        game.officialMove(engineMove);
 
         game.turn = game.turn == Color::WHITE ? Color::BLACK : Color::WHITE;
 
