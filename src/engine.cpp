@@ -160,7 +160,7 @@ int Engine::search(int depth, int alpha, int beta, Color color, Move &bestMove, 
 int Engine::quiescence(int alpha, int beta, Color color, uint8_t castleRights, long long &counter, time_point_t timeStart)
 {
 
-    int eval = evaluator.eval(game->board) * (color == Color::WHITE ? 1 : -1);
+    int eval = evaluator.eval(game->board) * (color == Color::BLACK ? -1 : 1); // Returns the evaluation from the current color's perspective
 
     if(eval >= beta) return beta;
     alpha = std::max(alpha, eval);

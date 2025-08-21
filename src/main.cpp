@@ -14,7 +14,7 @@ std::string getEvalText(int eval)
     else if (abs(eval) <= 100)
         return "position is roughly equal";
     else if (abs(eval) + 20 >= 100000)
-        return "MATE in " + std::to_string(abs(abs(eval) - 100000));
+        return "MATE in " + std::to_string(abs(abs(eval) - 100000)) + " for " + (eval > 0 ? "white" : "black");
     else if (eval < -150)
         return "black is better";
     else if (eval > 150)
@@ -86,7 +86,6 @@ int main(int argc, char *argv[])
     double eval = engine.chooseMove(game.castleRights).second;
 
     std::cout << "Fen: " << game.getFen(game.board) << std::endl;
-    game.loadFromFen("4rb1k/2pqn2p/6pn/ppp3N1/P1QP2b1/1P2p3/2B3PP/B3RRK1 w - - 0 24");
 
     while (true)
     {

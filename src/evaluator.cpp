@@ -1,6 +1,7 @@
 
 #include "../include/evaluator.h"
 #include "../include/definitions.h"
+#include "../include/movegen.h"
 #include "../include/utils.h"
 #include <array>
 #include <iostream>
@@ -52,9 +53,10 @@ std::array<int, 80> Evaluator::getPieceTable(Piece piece)
     }
 }
 
+// returns the board evaluation from white's perspective
 double Evaluator::eval(Piece board[120])
 {
-
+    // Evalutation from black perspective
     double evaluation = 0;
 
     for (int i = 21; i < 99; i++)
@@ -70,6 +72,9 @@ double Evaluator::eval(Piece board[120])
 
         // Adds to the evaluation a value based on the piece's position
         pieceEval += this->getPieceTable(piece)[i - 20];
+
+        // Adds 4 point to the piece depending on its mobility
+        pieceEval += getMoves(board, i).size() * 4;
 
         if (!isWhite(piece))
             pieceEval *= -1;
