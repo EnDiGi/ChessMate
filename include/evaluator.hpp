@@ -1,5 +1,5 @@
 
-#include "definitions.h"
+#include "definitions.hpp"
 #include <array>
 
 class Evaluator
@@ -137,9 +137,14 @@ private:
         0,  -30,-40,-40,-50,-50,-40,-40,-30,   0,
     };
 
+    int knightMobilityBonus = 1;
+    int bishopMobilityBonus = 1;
+    int rookMobilityBonus = 2;
+    int queenMobilityBonus = 1;
+
     std::array<int, 80> getPieceTable(Piece piece);
 
 public:
 
-    double eval(Piece board[120]);
+    int eval(Piece board[120]);
 };

@@ -1,7 +1,7 @@
 
-#include "../include/game.h"
-#include "../include/utils.h"
-#include "../include/movegen.h"
+#include "../include/game.hpp"
+#include "../include/utils.hpp"
+#include "../include/movegen.hpp"
 #include <iostream>
 #include <algorithm>
 #include <string>
@@ -524,7 +524,12 @@ Piece Game::pieceAt(std::string algebraic)
 
 bool Game::isCheckmate()
 {
-    return getAllMoves(this, turn).size() == 0;
+    return getAllMoves(this, turn).size() == 0 && this->inCheck(turn);
+}
+
+bool Game::isStalemate()
+{
+    return getAllMoves(this, turn).size() == 0 && !this->inCheck(turn);
 }
 
 bool Game::inCheck(Color color)

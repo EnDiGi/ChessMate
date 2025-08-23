@@ -1,8 +1,14 @@
 
-#include "game.h"
-#include "definitions.h"
-#include "evaluator.h"
+#include "game.hpp"
+#include "definitions.hpp"
+#include "evaluator.hpp"
 #include <chrono>
+
+namespace MoveBonuses {
+    constexpr int CAPTURE = 100;
+    constexpr int CHECK = 100;
+    constexpr int CASTLE = 50;
+}
 
 typedef std::chrono::system_clock::time_point time_point_t;
 
@@ -24,7 +30,7 @@ public:
 
     std::pair<Move, int> chooseMove(uint8_t &castleRights);
 
-    int getMoveScore(const Move move);    
+    int getMoveScore(Move &move);    
 
     void sortMoves(std::vector<Move> &moves);
 

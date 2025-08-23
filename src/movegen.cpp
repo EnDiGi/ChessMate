@@ -1,8 +1,8 @@
 
-#include "../include/movegen.h"
-#include "../include/utils.h"
-#include "../include/definitions.h"
-#include "../include/game.h"
+#include "../include/movegen.hpp"
+#include "../include/utils.hpp"
+#include "../include/definitions.hpp"
+#include "../include/game.hpp"
 #include <iostream>
 #include <algorithm>
 #include <cstdint>

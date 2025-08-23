@@ -1,8 +1,8 @@
 
-#include "../include/evaluator.h"
-#include "../include/definitions.h"
-#include "../include/movegen.h"
-#include "../include/utils.h"
+#include "../include/evaluator.hpp"
+#include "../include/definitions.hpp"
+#include "../include/movegen.hpp"
+#include "../include/utils.hpp"
 #include <array>
 #include <iostream>
 
@@ -54,10 +54,10 @@ std::array<int, 80> Evaluator::getPieceTable(Piece piece)
 }
 
 // returns the board evaluation from white's perspective
-double Evaluator::eval(Piece board[120])
+int Evaluator::eval(Piece board[120])
 {
-    // Evalutation from black perspective
-    double evaluation = 0;
+    // Evalutation from white perspective
+    int evaluation = 0;
 
     for (int i = 21; i < 99; i++)
     {
@@ -73,11 +73,30 @@ double Evaluator::eval(Piece board[120])
         // Adds to the evaluation a value based on the piece's position
         pieceEval += this->getPieceTable(piece)[i - 20];
 
-        // Adds 4 point to the piece depending on its mobility
-        pieceEval += getMoves(board, i).size() * 4;
+        int mobility = getMoves(board, i).size();
+        switch (piece)
+        {
+        case Piece::wBishop:
+        case Piece::bBishop:
+            pieceEval += mobility * bishopMobilityBonus;
+            break;
+        case Piece::wKnight:
+        case Piece::bKnight:
+            pieceEval += mobility * knightMobilityBonus;
+            break;
+        case Piece::wRook:
+        case Piece::bRook:
+            pieceEval += mobility * rookMobilityBonus;
+            break;
+        case Piece::wQueen:
+        case Piece::bQueen:
+            pieceEval += mobility * queenMobilityBonus;
+            break;
+        default:
+            break;
+        }
 
-        if (!isWhite(piece))
-            pieceEval *= -1;
+        pieceEval *= (isWhite(piece) ? 1 : -1);
         evaluation += pieceEval;
     }
 

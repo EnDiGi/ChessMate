@@ -2,7 +2,7 @@
 #pragma once
 
 #include<vector>
-#include "definitions.h"
+#include "definitions.hpp"
 #include<string>
 #include<algorithm>
 #include<cstdint>

@@ -1,8 +1,8 @@
 
-#include "../include/game.h"
-#include "../include/engine.h"
-#include "../include/utils.h"
-#include "../include/movegen.h"
+#include "../include/game.hpp"
+#include "../include/engine.hpp"
+#include "../include/utils.hpp"
+#include "../include/movegen.hpp"
 #include <iostream>
 #include <algorithm>
 #include <cmath>
@@ -13,8 +13,8 @@ std::string getEvalText(int eval)
         return "position is equal";
     else if (abs(eval) <= 100)
         return "position is roughly equal";
-    else if (abs(eval) + 20 >= 100000)
-        return "MATE in " + std::to_string(abs(abs(eval) - 100000)) + " for " + (eval > 0 ? "white" : "black");
+    else if (abs(eval) + 20 >= MATE_SCORE)
+        return std::string("FORCED MATE for ") + (eval > 0 ? "white" : "black");
     else if (eval < -150)
         return "black is better";
     else if (eval > 150)
@@ -29,10 +29,15 @@ std::string getEvalText(int eval)
 int main(int argc, char *argv[])
 {
 
+    Game game;
+    game.turn = Color::WHITE;
+
     Color engineColor = Color::BLACK;
     uint engineMaxDepth = 4;
     uint engineMinDepth = 2;
     uint engineThinkingTime = 10;
+
+    std::string fen = game.startposfen;
 
     for (int i = 1; i < argc; i++)
     {
@@ -70,15 +75,20 @@ int main(int argc, char *argv[])
                 engineThinkingTime = timeInput;
             }
         }
+        else if (arg == "--fen" && i + 1 < argc)
+        {
+            fen = argv[i+1];
+            i++;
+        }
     }
+
+    game.loadFromFen(fen);
 
     std::cout << "\033[0m" << std::endl;
 
-    Game game;
-    game.turn = Color::WHITE;
-
     Engine engine(engineColor, &game, engineMinDepth, engineMaxDepth, engineThinkingTime);
     std::cout << "Engine initialized with color: " << getColorName(engine.color) << std::endl
+              << "                minimum depth: " << engine.minDepth << std::endl
               << "                maximum depth: " << engine.maxDepth << std::endl
               << "                thinking time: " << engine.thinkingTime << "s" << std::endl;
     std::cout << "The engine is evaluating the position..." << std::endl;
@@ -94,21 +104,26 @@ int main(int argc, char *argv[])
         if (game.turn == Color::WHITE)
         {
             game.moves++;
+            // Displays game information
             std::cout << "Fen: " << game.getFen(game.board) << std::endl;
             std::cout << "Evaluation: " << std::showpos << eval / 100 << std::noshowpos << std::endl;
+            std::cout << getEvalText(eval) << std::endl;
         }
 
         // * Player move
         if (game.turn != engine.color)
         {
-            // Displays game information
-            std::cout << getEvalText(eval) << std::endl;
 
             game.printBoard();
 
             if (game.isCheckmate())
             {
                 std::cout << getColorName(opponentColor(game.turn)) << " wins!" << std::endl;
+                return 0;
+            }
+            else if (game.isStalemate())
+            {
+                std::cout << "Stalemate!" << std::endl;
                 return 0;
             }
 
@@ -191,6 +206,11 @@ int main(int argc, char *argv[])
         if (game.isCheckmate())
         {
             std::cout << getColorName(opponentColor(game.turn)) << " wins!" << std::endl;
+            return 0;
+        }
+        else if (game.isStalemate())
+        {
+            std::cout << "Stalemate!" << std::endl;
             return 0;
         }
 

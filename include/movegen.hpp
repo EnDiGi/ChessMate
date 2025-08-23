@@ -1,8 +1,8 @@
 
 #include <vector>
 #include <cstdint>
-#include "definitions.h"
-#include "game.h"
+#include "definitions.hpp"
+#include "game.hpp"
 
 std::vector<Move> getBishopMoves(Piece board[120], int bishopSquare);
 

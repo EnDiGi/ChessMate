@@ -1,6 +1,8 @@
 
 #pragma once
 
+constexpr int MATE_SCORE = 100000;
+
 enum class Piece
 {
     OFFBOARD = -1,

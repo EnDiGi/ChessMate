@@ -3,7 +3,7 @@
 
 #include <string>
 #include <vector>
-#include "definitions.h"
+#include "definitions.hpp"
 #include <cstdint>
 
 class Game
@@ -58,6 +58,8 @@ public:
     Piece pieceAt(std::string algebraic);
 
     bool isCheckmate();
+
+    bool isStalemate();
 
     bool inCheck(Color color);
 

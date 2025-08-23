@@ -1,6 +1,6 @@
 
-#include "../include/utils.h"
-#include "../include/definitions.h"
+#include "../include/utils.hpp"
+#include "../include/definitions.hpp"
 #include <string>
 #include <random>
 #include <cstdint>

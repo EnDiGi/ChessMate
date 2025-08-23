@@ -1,8 +1,8 @@
 
-#include "../include/engine.h"
-#include "../include/definitions.h"
-#include "../include/movegen.h"
-#include "../include/utils.h"
+#include "../include/engine.hpp"
+#include "../include/definitions.hpp"
+#include "../include/movegen.hpp"
+#include "../include/utils.hpp"
 #include <iostream>
 #include <utility>
 #include <chrono>
@@ -30,16 +30,11 @@ std::pair<Move, int> Engine::chooseMove(uint8_t &castleRights)
     Move bestMoveSoFar;
     int eval = 0;
 
-    int depthReached = 0;
-
     // Implement iterative deepening
     for(int d = 1; d <= maxDepth; d++)
     {
-        std::cout << "searching at a depth of " << d << "..." << std::endl;
         Move currentBest;
-        int currentEval = search(d, -1000000, 1000000, game->turn, currentBest, castleRights, counter, start);
-
-        depthReached = d;
+        int currentEval = search(d, -MATE_SCORE, MATE_SCORE, game->turn, currentBest, castleRights, counter, start);
 
         if(timeUp(start) && d >= minDepth) break;
 
@@ -52,22 +47,34 @@ std::pair<Move, int> Engine::chooseMove(uint8_t &castleRights)
     auto duration = elapsed.count();
 
     // Display info for how many positions were evaluated in how much time
-    std::cout << "Analized " << counter << " positions in " << duration << "s reaching a depth of " << depthReached << " plies" << std::endl;
+    std::cout << "Analized " << counter << " positions in " << duration << "s" << std::endl;
 
-    return {bestMoveSoFar, eval * (this->color == Color::BLACK ? -1 : 1)};
+    return {bestMoveSoFar, eval * (this->color == Color::WHITE ? 1 : -1)};
 }
 
-int Engine::getMoveScore(const Move move)
+int Engine::getMoveScore(Move &move)
 {
+
+    game->move(move);
+
     int score = 0;
 
     // Adds to the score the value of the captured piece
     if (move.captured != Piece::NO_PIECE)
-        score += 10 * (getPieceValue(move.captured) - getPieceValue(game->board[move.to]));
+        score += MoveBonuses::CAPTURE + (getPieceValue(move.captured) - getPieceValue(game->board[move.to]));
 
-    // Adds the value of the piece that the pawn promotes to
+    // Adds the value of the piece the pawn is promoting to
     if (move.promotion)
         score += getPieceValue(game->board[move.to]);
+    
+    // Bonus points for castling
+    if(move.isCastle)
+        score += MoveBonuses::CASTLE;
+    
+    if(game->inCheck(opponentColor(getColor(game->board[move.to]))))
+        score += MoveBonuses::CHECK;
+
+    game->undoMove(move);
 
     return score;
 }
@@ -108,7 +115,7 @@ int Engine::search(int depth, int alpha, int beta, Color color, Move &bestMove, 
 {
 
     if (depth == 0)
-        return -quiescence(-1000000, 1000000, opponentColor(color), castleRights, counter, timerStart);
+        return quiescence(-MATE_SCORE, MATE_SCORE, opponentColor(color), castleRights, counter, timerStart) * (color == Color::WHITE ? 1 : -1);
 
 
     if(timeUp(timerStart) && depth >= minDepth)
@@ -121,7 +128,7 @@ int Engine::search(int depth, int alpha, int beta, Color color, Move &bestMove, 
     
     if(allMoves.empty()) {
         // No move available: checkmate or stalemate
-        if(game->inCheck(color)) return -100000 + depth;
+        if(game->inCheck(color)) return -MATE_SCORE + (maxDepth - depth); 
         return 0;
     }
     
@@ -160,9 +167,7 @@ int Engine::search(int depth, int alpha, int beta, Color color, Move &bestMove, 
 int Engine::quiescence(int alpha, int beta, Color color, uint8_t castleRights, long long &counter, time_point_t timeStart)
 {
 
-    int eval = evaluator.eval(game->board) * (color == Color::BLACK ? -1 : 1); // Returns the evaluation from the current color's perspective
-
-    if(eval >= beta) return beta;
+    int eval = evaluator.eval(game->board); // Evaluation from the current player's perspective
     alpha = std::max(alpha, eval);
 
     if(timeUp(timeStart)) return alpha;
